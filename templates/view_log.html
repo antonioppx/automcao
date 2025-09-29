@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram Automation - Log: {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Log: {{ filename }}
+                    </h2>
+                    <div>
+                        <a href="{{ url_for('logs') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                        <button type="button" class="btn btn-outline-primary" onclick="copyLogContent()">
+                            <i class="fas fa-copy me-2"></i>Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="scrollToTop()">
+                            <i class="fas fa-arrow-up me-1"></i>Topo
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="scrollToBottom()">
+                            <i class="fas fa-arrow-down me-1"></i>Final
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="searchInLog()">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="toggleAutoScroll()">
+                            <i class="fas fa-sync me-1"></i>Auto-scroll
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="border rounded p-3" style="height: 600px; overflow-y: auto; background-color: #1e1e1e; color: #ffffff; font-family: 'Courier New', monospace; font-size: 0.9rem;">
+                    <pre id="logContent" class="mb-0">{{ content }}</pre>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Total de linhas: <span id="lineCount">{{ content.split('\n')|length }}</span>
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                Última atualização: <span id="lastUpdate">{{ moment().format('HH:mm:ss') }}</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Busca -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-search me-2"></i>Buscar no Log
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="searchTerm" class="form-label">Termo de Busca:</label>
+                    <input type="text" class="form-control" id="searchTerm" placeholder="Digite o termo para buscar">
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="caseSensitive">
+                        <label class="form-check-label" for="caseSensitive">
+                            Diferenciar maiúsculas e minúsculas
+                        </label>
+                    </div>
+                </div>
+                <div id="searchResults"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="performSearch()">Buscar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let autoScrollEnabled = false;
+    let autoScrollInterval;
+    
+    function scrollToTop() {
+        const logContent = document.getElementById('logContent');
+        logContent.scrollTop = 0;
+    }
+    
+    function scrollToBottom() {
+        const logContent = document.getElementById('logContent');
+        logContent.scrollTop = logContent.scrollHeight;
+    }
+    
+    function copyLogContent() {
+        const logContent = document.getElementById('logContent');
+        const text = logContent.textContent;
+        
+        navigator.clipboard.writeText(text).then(function() {
+            // Mostrar feedback visual
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check me-2"></i>Copiado!';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-primary');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
+        }, function(err) {
+            console.error('Erro ao copiar: ', err);
+            alert('Erro ao copiar o conteúdo do log.');
+        });
+    }
+    
+    function searchInLog() {
+        const modal = new bootstrap.Modal(document.getElementById('searchModal'));
+        modal.show();
+    }
+    
+    function performSearch() {
+        const searchTerm = document.getElementById('searchTerm').value.trim();
+        const caseSensitive = document.getElementById('caseSensitive').checked;
+        
+        if (!searchTerm) {
+            alert('Por favor, digite um termo para buscar.');
+            return;
+        }
+        
+        const logContent = document.getElementById('logContent');
+        const text = logContent.textContent;
+        
+        let searchText = text;
+        let term = searchTerm;
+        
+        if (!caseSensitive) {
+            searchText = text.toLowerCase();
+            term = searchTerm.toLowerCase();
+        }
+        
+        const occurrences = [];
+        let index = searchText.indexOf(term);
+        let count = 0;
+        
+        while (index !== -1 && count < 100) { // Limitar a 100 ocorrências
+            occurrences.push(index);
+            index = searchText.indexOf(term, index + 1);
+            count++;
+        }
+        
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (occurrences.length > 0) {
+            resultsDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Encontradas ${occurrences.length} ocorrências do termo "${searchTerm}"
+                </div>
+                <button type="button" class="btn btn-sm btn-primary" onclick="highlightSearch('${searchTerm}', ${caseSensitive})">
+                    <i class="fas fa-highlighter me-1"></i>Destacar Ocorrências
+                </button>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Nenhuma ocorrência encontrada para o termo "${searchTerm}"
+                </div>
+            `;
+        }
+    }
+    
+    function highlightSearch(term, caseSensitive) {
+        const logContent = document.getElementById('logContent');
+        const text = logContent.textContent;
+        
+        let searchText = text;
+        let searchTerm = term;
+        
+        if (!caseSensitive) {
+            searchText = text.toLowerCase();
+            searchTerm = term.toLowerCase();
+        }
+        
+        const regex = new RegExp(`(${searchTerm})`, caseSensitive ? 'g' : 'gi');
+        const highlightedText = text.replace(regex, '<mark>$1</mark>');
+        
+        logContent.innerHTML = highlightedText;
+        
+        // Scroll para a primeira ocorrência
+        const firstMark = logContent.querySelector('mark');
+        if (firstMark) {
+            firstMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Fechar modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
+        modal.hide();
+    }
+    
+    function toggleAutoScroll() {
+        autoScrollEnabled = !autoScrollEnabled;
+        const button = event.target.closest('button');
+        
+        if (autoScrollEnabled) {
+            button.innerHTML = '<i class="fas fa-pause me-1"></i>Parar Auto-scroll';
+            button.classList.add('btn-warning');
+            button.classList.remove('btn-outline-warning');
+            
+            autoScrollInterval = setInterval(() => {
+                scrollToBottom();
+            }, 2000);
+        } else {
+            button.innerHTML = '<i class="fas fa-sync me-1"></i>Auto-scroll';
+            button.classList.remove('btn-warning');
+            button.classList.add('btn-outline-warning');
+            
+            if (autoScrollInterval) {
+                clearInterval(autoScrollInterval);
+            }
+        }
+    }
+    
+    // Auto-scroll para o final quando a página carrega
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(scrollToBottom, 100);
+    });
+    
+    // Atualizar timestamp a cada minuto
+    setInterval(function() {
+        const now = new Date();
+        document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+    }, 60000);
+</script>
+{% endblock %}

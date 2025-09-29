@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram Automation - Executar Follows{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-heart me-2"></i>
+                    Executar Seguidas Automáticas
+                </h2>
+            </div>
+            <div class="card-body">
+                {% if accounts %}
+                    <form id="followForm">
+                        <div class="row">
+                            <!-- Configurações Básicas -->
+                            <div class="col-md-6">
+                                <div class="card border-primary mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-cog me-2"></i>
+                                            Configurações
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="target_usernames" class="form-label">
+                                                <i class="fas fa-users me-1"></i>Usuários Alvo
+                                            </label>
+                                            <textarea class="form-control" id="target_usernames" name="target_usernames" 
+                                                      rows="4" placeholder="Digite os usernames dos usuários que deseja seguir (um por linha ou separados por vírgula)" required></textarea>
+                                            <div class="form-text">
+                                                Exemplo: usuario1, usuario2, usuario3
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="max_follows" class="form-label">
+                                                <i class="fas fa-hashtag me-1"></i>Máximo de Seguidas por Conta
+                                            </label>
+                                            <input type="number" class="form-control" id="max_follows" name="max_follows" 
+                                                   value="10" min="1" max="50">
+                                            <div class="form-text">
+                                                Recomendado: 10-20 para evitar detecção
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="mode" class="form-label">
+                                                <i class="fas fa-play me-1"></i>Modo de Execução
+                                            </label>
+                                            <select class="form-control" id="mode" name="mode">
+                                                <option value="sequential">Sequencial (Mais Seguro)</option>
+                                                <option value="parallel">Paralelo (Mais Rápido)</option>
+                                            </select>
+                                            <div class="form-text">
+                                                Sequencial: uma conta por vez | Paralelo: todas simultaneamente
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Contas Disponíveis -->
+                            <div class="col-md-6">
+                                <div class="card border-success mb-4">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-users me-2"></i>
+                                            Contas Disponíveis ({{ accounts|length }})
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Username</th>
+                                                        <th>Status</th>
+                                                        <th>Follows</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for account in accounts %}
+                                                    <tr>
+                                                        <td>
+                                                            <strong>{{ account.username }}</strong>
+                                                        </td>
+                                                        <td>
+                                                            {% if account.get('enabled', True) %}
+                                                                <span class="badge bg-success">Ativa</span>
+                                                            {% else %}
+                                                                <span class="badge bg-danger">Inativa</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-info">{{ account.get('follow_count', 0) }}</span>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="button" class="btn btn-outline-secondary me-md-2" onclick="clearForm()">
+                                        <i class="fas fa-eraser me-2"></i>Limpar
+                                    </button>
+                                    <button type="submit" class="btn btn-primary btn-lg" id="startButton">
+                                        <i class="fas fa-play me-2"></i>Iniciar Seguidas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-5x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nenhuma conta configurada</h4>
+                        <p class="text-muted">Configure suas contas do Instagram primeiro.</p>
+                        <a href="{{ url_for('accounts') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Adicionar Contas
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Execução
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Atenção!</strong> Esta operação irá seguir usuários automaticamente.
+                </div>
+                
+                <div id="confirmDetails"></div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Dicas:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Use com moderação para evitar detecção</li>
+                        <li>Monitore os logs durante a execução</li>
+                        <li>Respeite os limites do Instagram</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmButton">
+                    <i class="fas fa-play me-2"></i>Confirmar e Executar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Progresso -->
+<div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-cog fa-spin me-2"></i>Execução em Andamento
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Conta Atual:</label>
+                    <div class="fw-bold" id="currentAccount">-</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Progresso:</label>
+                    <div class="progress">
+                        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span id="progressText">0/0</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Log de Atividades:</label>
+                    <div class="border rounded p-3" style="height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+                        <div id="activityLog"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="stopExecution()">
+                    <i class="fas fa-stop me-2"></i>Parar Execução
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let executionInterval;
+    
+    document.getElementById('followForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showConfirmModal();
+    });
+    
+    function showConfirmModal() {
+        const targets = document.getElementById('target_usernames').value.trim();
+        const maxFollows = document.getElementById('max_follows').value;
+        const mode = document.getElementById('mode').value;
+        
+        if (!targets) {
+            alert('Por favor, digite pelo menos um usuário alvo!');
+            return;
+        }
+        
+        const targetList = targets.split(/[,\n]/).map(t => t.trim()).filter(t => t);
+        
+        document.getElementById('confirmDetails').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Usuários Alvo:</strong><br>
+                    <span class="text-primary">${targetList.length} usuários</span>
+                </div>
+                <div class="col-md-6">
+                    <strong>Máximo por Conta:</strong><br>
+                    <span class="text-primary">${maxFollows} seguidas</span>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <strong>Modo:</strong><br>
+                    <span class="text-primary">${mode === 'sequential' ? 'Sequencial' : 'Paralelo'}</span>
+                </div>
+                <div class="col-md-6">
+                    <strong>Contas Disponíveis:</strong><br>
+                    <span class="text-primary">{{ accounts|length }} contas</span>
+                </div>
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        modal.show();
+    }
+    
+    document.getElementById('confirmButton').addEventListener('click', function() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+        modal.hide();
+        startExecution();
+    });
+    
+    function startExecution() {
+        const formData = new FormData(document.getElementById('followForm'));
+        
+        fetch('/start_follow', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showProgressModal();
+                startStatusCheck();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao iniciar execução!');
+        });
+    }
+    
+    function showProgressModal() {
+        const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+        modal.show();
+    }
+    
+    function startStatusCheck() {
+        executionInterval = setInterval(checkStatus, 2000);
+    }
+    
+    function checkStatus() {
+        fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    updateProgress(data);
+                } else {
+                    stopStatusCheck();
+                    showResults(data);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao verificar status:', error);
+            });
+    }
+    
+    function updateProgress(data) {
+        document.getElementById('currentAccount').textContent = data.current_account || '-';
+        document.getElementById('progressText').textContent = `${data.completed_targets}/${data.total_targets}`;
+        
+        const progressBar = document.getElementById('progressBar');
+        progressBar.style.width = `${data.progress}%`;
+        progressBar.textContent = `${data.progress}%`;
+        
+        // Atualizar log de atividades
+        const activityLog = document.getElementById('activityLog');
+        const timestamp = new Date().toLocaleTimeString();
+        activityLog.innerHTML += `<div class="small text-muted">[${timestamp}] Processando conta: ${data.current_account || '-'}</div>`;
+        activityLog.scrollTop = activityLog.scrollHeight;
+    }
+    
+    function stopStatusCheck() {
+        if (executionInterval) {
+            clearInterval(executionInterval);
+        }
+    }
+    
+    function stopExecution() {
+        if (confirm('Tem certeza que deseja parar a execução?')) {
+            fetch('/stop_execution')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        stopStatusCheck();
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+                        modal.hide();
+                        alert('Execução parada com sucesso!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao parar execução:', error);
+                });
+        }
+    }
+    
+    function showResults(data) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+        modal.hide();
+        
+        let resultsHtml = '<h5>Resultados da Execução:</h5>';
+        
+        if (data.results) {
+            for (const [account, result] of Object.entries(data.results)) {
+                if (result.success) {
+                    resultsHtml += `
+                        <div class="alert alert-success">
+                            <strong>${account}:</strong> ${result.successful_follows} sucessos, ${result.failed_follows} falhas
+                        </div>
+                    `;
+                } else {
+                    resultsHtml += `
+                        <div class="alert alert-danger">
+                            <strong>${account}:</strong> Erro - ${result.error}
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        alert(resultsHtml);
+    }
+    
+    function clearForm() {
+        document.getElementById('followForm').reset();
+        document.getElementById('target_usernames').value = '';
+    }
+    
+    // Auto-focus no campo de usuários alvo
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('target_usernames').focus();
+    });
+</script>
+{% endblock %}

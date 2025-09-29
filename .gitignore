@@ -1,0 +1,29 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# VSCode / Cursor
+.vscode/
+.cursor/
+
+# Logs e dados locais
+*.log
+logs/
+app.db
+accounts.json
+
+# Sistema operacional
+Thumbs.db
+.DS_Store
+
+# Cache de drivers
+undetected_chromedriver/
+**/undetected_chromedriver/**
+*.exe

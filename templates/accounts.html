@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram Automation - Gerenciar Contas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Gerenciar Contas do Instagram
+                </h2>
+            </div>
+            <div class="card-body">
+                <!-- Adicionar Nova Conta -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-plus me-2"></i>
+                                    Adicionar Nova Conta
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('add_account') }}">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="username" class="form-label">
+                                                    <i class="fas fa-user me-1"></i>Username
+                                                </label>
+                                                <input type="text" class="form-control" id="username" name="username" 
+                                                       placeholder="seu_username" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="password" class="form-label">
+                                                    <i class="fas fa-lock me-1"></i>Senha
+                                                </label>
+                                                <input type="password" class="form-control" id="password" name="password" 
+                                                       placeholder="sua_senha" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="account_id" class="form-label">
+                                                    <i class="fas fa-tag me-1"></i>ID da Conta (opcional)
+                                                </label>
+                                                <input type="text" class="form-control" id="account_id" name="account_id" 
+                                                       placeholder="identificador_unico">
+                                                <div class="form-text">Deixe vazio para usar o username</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Adicionar Conta
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Contas -->
+                <div class="row">
+                    <div class="col-12">
+                        <h4>
+                            <i class="fas fa-list me-2"></i>
+                            Contas Cadastradas ({{ accounts|length }})
+                        </h4>
+                        
+                        {% if accounts %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th><i class="fas fa-user me-1"></i>Username</th>
+                                            <th><i class="fas fa-tag me-1"></i>ID</th>
+                                            <th><i class="fas fa-toggle-on me-1"></i>Status</th>
+                                            <th><i class="fas fa-heart me-1"></i>Follows</th>
+                                            <th><i class="fas fa-clock me-1"></i>Último Uso</th>
+                                            <th><i class="fas fa-cogs me-1"></i>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for account in accounts %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ account.username }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ account.account_id or account.username }}</span>
+                                            </td>
+                                            <td>
+                                                {% if account.get('enabled', True) %}
+                                                    <span class="status-badge status-active">
+                                                        <i class="fas fa-check-circle me-1"></i>Ativa
+                                                    </span>
+                                                {% else %}
+                                                    <span class="status-badge status-inactive">
+                                                        <i class="fas fa-times-circle me-1"></i>Inativa
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ account.get('follow_count', 0) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if account.get('last_used') %}
+                                                    <small class="text-muted">
+                                                        {{ account.last_used }}
+                                                    </small>
+                                                {% else %}
+                                                    <small class="text-muted">Nunca</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            onclick="editAccount('{{ account.username }}')">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <a href="{{ url_for('remove_account', username=account.username) }}" 
+                                                       class="btn btn-sm btn-outline-danger"
+                                                       onclick="return confirm('Tem certeza que deseja remover a conta {{ account.username }}?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-users fa-5x text-muted mb-3"></i>
+                                <h4 class="text-muted">Nenhuma conta cadastrada</h4>
+                                <p class="text-muted">Adicione suas contas do Instagram para começar a usar a automação.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edição -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Editar Conta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="mb-3">
+                        <label for="edit_username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="edit_username" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label">Nova Senha</label>
+                        <input type="password" class="form-control" id="edit_password" placeholder="Deixe vazio para manter a atual">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_account_id" class="form-label">ID da Conta</label>
+                        <input type="text" class="form-control" id="edit_account_id">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_enabled" checked>
+                            <label class="form-check-label" for="edit_enabled">
+                                Conta ativa
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveAccount()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function editAccount(username) {
+        // Aqui você pode implementar a funcionalidade de edição
+        // Por enquanto, apenas mostra o modal
+        document.getElementById('edit_username').value = username;
+        document.getElementById('edit_account_id').value = username;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editModal'));
+        modal.show();
+    }
+    
+    function saveAccount() {
+        // Implementar salvamento da conta editada
+        alert('Funcionalidade de edição será implementada em breve!');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+        modal.hide();
+    }
+    
+    // Auto-focus no campo username quando a página carrega
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('username').focus();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram Automation - Estatísticas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Estatísticas do Sistema
+                </h2>
+            </div>
+            <div class="card-body">
+                <!-- Cards de Resumo -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-primary text-center">
+                            <div class="card-body">
+                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                <h3 class="text-primary">{{ stats.total_accounts }}</h3>
+                                <p class="text-muted mb-0">Total de Contas</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-primary text-center">
+                            <div class="card-body">
+                                <i class="fas fa-check-circle fa-3x text-primary mb-3"></i>
+                                <h3 class="text-primary">{{ stats.active_accounts }}</h3>
+                                <p class="text-muted mb-0">Contas Ativas</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-primary text-center">
+                            <div class="card-body">
+                                <i class="fas fa-heart fa-3x text-primary mb-3"></i>
+                                <h3 class="text-primary">{{ stats.total_follows }}</h3>
+                                <p class="text-muted mb-0">Total de Follows</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-primary text-center">
+                            <div class="card-body">
+                                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                                <h3 class="text-primary">
+                                    {% if stats.total_accounts > 0 %}
+                                        {{ "%.1f"|format(stats.total_follows / stats.total_accounts) }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </h3>
+                                <p class="text-muted mb-0">Média por Conta</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Performance -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2"></i>
+                                    Performance por Conta
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="performanceChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela Detalhada -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-table me-2"></i>
+                                    Detalhes por Conta
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.accounts %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th><i class="fas fa-user me-1"></i>Username</th>
+                                                    <th><i class="fas fa-tag me-1"></i>ID</th>
+                                                    <th><i class="fas fa-toggle-on me-1"></i>Status</th>
+                                                    <th><i class="fas fa-heart me-1"></i>Follows</th>
+                                                    <th><i class="fas fa-clock me-1"></i>Último Uso</th>
+                                                    <th><i class="fas fa-chart-bar me-1"></i>Performance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for account in stats.accounts %}
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ account.username }}</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-secondary">{{ account.account_id or account.username }}</span>
+                                                    </td>
+                                                    <td>
+                                                        {% if account.get('enabled', True) %}
+                                                            <span class="status-badge status-active">
+                                                                <i class="fas fa-check-circle me-1"></i>Ativa
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="status-badge status-inactive">
+                                                                <i class="fas fa-times-circle me-1"></i>Inativa
+                                                            </span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-info fs-6">
+                                                            {{ account.get('follow_count', 0) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        {% if account.get('last_used') %}
+                                                            <small class="text-muted">
+                                                                {{ account.last_used }}
+                                                            </small>
+                                                        {% else %}
+                                                            <small class="text-muted">Nunca</small>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% set follow_count = account.get('follow_count', 0) %}
+                                                        {% if follow_count > 0 %}
+                                                            <div class="progress" style="height: 20px;">
+                                                                {% set percentage = (follow_count / 50) * 100 %}
+                                                                {% if percentage > 100 %}
+                                                                    {% set percentage = 100 %}
+                                                                {% endif %}
+                                                                <div class="progress-bar 
+                                                                    {% if percentage < 30 %}bg-success
+                                                                    {% elif percentage < 70 %}bg-warning
+                                                                    {% else %}bg-danger{% endif %}" 
+                                                                     style="width: {{ percentage }}%">
+                                                                    {{ follow_count }}
+                                                                </div>
+                                                            </div>
+                                                        {% else %}
+                                                            <span class="text-muted">Sem atividade</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-chart-bar fa-5x text-muted mb-3"></i>
+                                        <h4 class="text-muted">Nenhuma estatística disponível</h4>
+                                        <p class="text-muted">As estatísticas aparecerão aqui após usar o sistema.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações Rápidas -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-tools me-2"></i>
+                                    Ações Rápidas
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <a href="{{ url_for('accounts') }}" class="btn btn-outline-primary w-100">
+                                            <i class="fas fa-users me-2"></i>Gerenciar Contas
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="{{ url_for('follow') }}" class="btn btn-outline-success w-100">
+                                            <i class="fas fa-heart me-2"></i>Executar Follows
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="{{ url_for('logs') }}" class="btn btn-outline-info w-100">
+                                            <i class="fas fa-file-alt me-2"></i>Ver Logs
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-outline-warning w-100" onclick="refreshStats()">
+                                            <i class="fas fa-sync me-2"></i>Atualizar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de Performance
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    const accountData = {
+        labels: [
+            {% for account in stats.accounts %}
+                '{{ account.username }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Follows por Conta',
+            data: [
+                {% for account in stats.accounts %}
+                    {{ account.get('follow_count', 0) }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                'rgba(74, 144, 226, 0.8)',
+                'rgba(135, 206, 235, 0.8)',
+                'rgba(173, 216, 230, 0.8)',
+                'rgba(176, 224, 230, 0.8)',
+                'rgba(175, 238, 238, 0.8)',
+                'rgba(224, 255, 255, 0.8)',
+                'rgba(240, 248, 255, 0.8)',
+                'rgba(230, 230, 250, 0.8)'
+            ],
+            borderColor: [
+                'rgba(74, 144, 226, 1)',
+                'rgba(135, 206, 235, 1)',
+                'rgba(173, 216, 230, 1)',
+                'rgba(176, 224, 230, 1)',
+                'rgba(175, 238, 238, 1)',
+                'rgba(224, 255, 255, 1)',
+                'rgba(240, 248, 255, 1)',
+                'rgba(230, 230, 250, 1)'
+            ],
+            borderWidth: 2
+        }]
+    };
+    
+    const performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: accountData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Número de Follows por Conta'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    function refreshStats() {
+        location.reload();
+    }
+    
+    // Auto-refresh a cada 5 minutos
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

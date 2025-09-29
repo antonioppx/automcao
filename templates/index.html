@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram Automation - Início{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-rocket me-2"></i>
+                    Bem-vindo ao Instagram Automation
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h4>🚀 Sistema de Seguidas Automáticas</h4>
+                        <p class="lead">
+                            Automatize seguidas no Instagram usando múltiplas contas de forma rápida e eficiente.
+                        </p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                        <h5>Múltiplas Contas</h5>
+                                        <p class="text-muted">Gerencie várias contas do Instagram simultaneamente</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-heart fa-3x text-primary mb-3"></i>
+                                        <h5>Follow Automático</h5>
+                                        <p class="text-muted">Segue usuários específicos automaticamente</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                                        <h5>Anti-Detecção</h5>
+                                        <p class="text-muted">Delays aleatórios e comportamento humano</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                                        <h5>Monitoramento</h5>
+                                        <p class="text-muted">Logs detalhados e estatísticas em tempo real</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h4><i class="fas fa-play-circle me-2"></i>Começar Agora</h4>
+                                <p>Configure suas contas e comece a automatizar!</p>
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('accounts') }}" class="btn btn-light btn-lg">
+                                        <i class="fas fa-users me-2"></i>
+                                        Gerenciar Contas
+                                    </a>
+                                    <a href="{{ url_for('follow') }}" class="btn btn-outline-light btn-lg">
+                                        <i class="fas fa-heart me-2"></i>
+                                        Executar Follows
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-3">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Importante
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-check text-success me-2"></i>Use contas válidas</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Respeite os limites</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Monitore os logs</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Use com moderação</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status da Execução -->
+<div class="row mt-4" id="execution-status" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog fa-spin me-2"></i>
+                    Execução em Andamento
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Conta Atual:</strong> <span id="current-account">-</span></p>
+                        <p><strong>Progresso:</strong> <span id="progress-text">0/0</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="progress mb-2">
+                            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="stopExecution()">
+                            <i class="fas fa-stop me-1"></i>Parar Execução
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultados -->
+<div class="row mt-4" id="results-section" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Resultados da Execução
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="results-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Verificar status da execução a cada 2 segundos
+    setInterval(checkExecutionStatus, 2000);
+    
+    function checkExecutionStatus() {
+        fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    showExecutionStatus(data);
+                } else {
+                    hideExecutionStatus();
+                }
+            })
+            .catch(error => console.error('Erro ao verificar status:', error));
+    }
+    
+    function showExecutionStatus(data) {
+        document.getElementById('execution-status').style.display = 'block';
+        document.getElementById('current-account').textContent = data.current_account || '-';
+        document.getElementById('progress-text').textContent = `${data.completed_targets}/${data.total_targets}`;
+        
+        const progressBar = document.getElementById('progress-bar');
+        progressBar.style.width = `${data.progress}%`;
+        progressBar.textContent = `${data.progress}%`;
+    }
+    
+    function hideExecutionStatus() {
+        document.getElementById('execution-status').style.display = 'none';
+    }
+    
+    function stopExecution() {
+        if (confirm('Tem certeza que deseja parar a execução?')) {
+            fetch('/stop_execution')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Execução parada com sucesso!');
+                        location.reload();
+                    }
+                })
+                .catch(error => console.error('Erro ao parar execução:', error));
+        }
+    }
+</script>
+{% endblock %}
