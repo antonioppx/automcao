@@ -1,0 +1,38 @@
+{
+  "name": "Instagram Automation",
+  "description": "Automação web para Instagram com interface moderna",
+  "repository": "https://github.com/antonioppx/automcao",
+  "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg",
+  "keywords": ["python", "flask", "instagram", "automation", "selenium"],
+  "stack": "heroku-20",
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-chromedriver"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-google-chrome"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "env": {
+    "FLASK_ENV": {
+      "description": "Flask environment",
+      "value": "production"
+    },
+    "SECRET_KEY": {
+      "description": "Secret key for Flask sessions",
+      "generator": "secret"
+    }
+  },
+  "addons": [
+    "heroku-postgresql:mini"
+  ]
+}
